@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 
 import java.io.Console;
 
+import java.util.Arrays;
+
 public class App{
 
 
@@ -28,5 +30,9 @@ public class App{
         console.printf("Testing password input %n");
         char passwordArray[] = console.readPassword("Enter your secret password: ");
         console.printf("Password entered was: %s%n", new String(passwordArray));
+
+	console.printf("Using password to encrypt file: target/foo");
+
+
     }
 }
