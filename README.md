@@ -4,7 +4,8 @@ Sample app to use classes from Cryptest and fileFetcher
 
 Its sample purpose is to to encrypt and decrypt files
 
-## DECOUPLING, so I don't care whre fileFetcher gets this file it writes to temp for decryption or where it stores that file
+## DECOUPLING
+so I don't care whre fileFetcher gets this file it writes to temp for decryption or where it stores that file
 	
 ## ENCRYPTION
 1. I need to create a stream from file to encrypt
