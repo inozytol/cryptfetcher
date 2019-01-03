@@ -3,7 +3,9 @@
 # configure file contains paths to libraries and additional
 # scripts setting up enviroment
 # defined variables
-# LIB_JAR_PATH
+# LIB_JAR_PATH - path to inozytol/fileFetcher.jar and inozytol/Cryptest.jar
+# LOG4J_JAR_API_PATH
+# LOG$J_JAR_CORE_PATH
 # LIBS
 . configure.sh
 
@@ -14,3 +16,7 @@ mkdir target
 javac -d target -cp $LIBS:.:target src/main/inozytol/cryptFetcher/App.java
 
 java -cp $LIBS:.:target inozytol.cryptFetcher.App
+
+java -cp $LIBS:.:target inozytol.cryptFetcher.App lol ./
+
+java -cp $LIBS:.:target inozytol.cryptFetcher.App README.md ./

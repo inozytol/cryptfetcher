@@ -14,6 +14,14 @@ import java.io.Console;
 
 import java.util.Arrays;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.FileNotFoundException;
 
 /** 
  * Class for testing fileFetcher and Cryptest usage in file encryption app
@@ -22,10 +30,6 @@ public class App{
 
 
     public static void main(String [] args){
-	FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get("."));
-
-	System.out.println("works somewhat");
-
 
 	Console console = System.console();
         if (console == null) {
@@ -37,6 +41,31 @@ public class App{
 	    console.printf("Well, you should give two arguments to this app: one - file to store; second - storage path");
 	    System.exit(1);
 	}
+
+	Path fileToStore = Paths.get(args[0]);
+	if(!fileToStore.toFile().exists()){
+	    console.printf("Unfortunately the file you want to store does not exist.");
+	    System.exit(1);
+	}
+
+	if(!fileToStore.toFile().isFile()){
+	    console.printf("Unfortunately the file you want to store is in fact, not a file.");
+	    System.exit(1);
+	}
+
+	if(!fileToStore.toFile().isFile()){
+	    console.printf("Unfortunately the file you want to store is in fact, not a file.");
+	    System.exit(1);
+	}
+
+	if(!Paths.get(args[1]).toFile().isDirectory()){
+	    console.printf("Storage path doesn't exist or is not a directory.");
+	    System.exit(1);
+	}
+
+
+	FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
+
 	
         console.printf("Testing password input %n");
 	
@@ -52,19 +81,22 @@ public class App{
 
 	console.printf("Using password to encrypt file: target/foo");
 
-
-	// Path.toFile
+	Path tempOutputFile = Paths.get(fileToStore.getParent()==null?".":fileToStore.getParent().toString(), fileToStore.getFileName().toString() + ".inocrypt");
 	
+	try (InputStream bis = new BufferedInputStream(new FileInputStream(fileToStore.toFile()));
+	     OutputStream bos = new BufferedOutputStream(new FileOutputStream(tempOutputFile.toFile()))) {
 	
-	Path fileToStore = Paths.get(args[0]);
-	if(!fileToStore.toFile().exists()){
-	    console.printf("Unfortunately the file you want to store does not exist.");
-	    System.exit(1);
-	}
-
-	if(!fileToStore.toFile().isFile()){
-	    console.printf("Unfortunately the file you want to store is in fact, not a file.");
-	    System.exit(1);
+	StreamCrypt sc = new Cryptest();
+	sc.encryptDataStreamToStream​(passwordArray,
+                                     5000,
+                                     bis,
+                                     bos);
+	} catch (FileNotFoundException e) {
+	    // TODO: LOG
+	    console.printf("For some reason some file was not found during encryption " + e);
+	} catch (IOException e) {
+	    // TODO: LOG
+	    console.printf("Exception occured during encryption " + e);
 	}
 	
 	// create output path, write to it from Cryptest,
