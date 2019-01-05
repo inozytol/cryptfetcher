@@ -8,7 +8,8 @@ import inozytol.dataencryption.StreamCrypt;
 
 import java.nio.file.Paths;
 import java.nio.file.Path;
-import java.io.File;
+//import java.io.File;
+import java.nio.file.Files;
 
 import java.io.Console;
 
@@ -43,22 +44,18 @@ public class App{
 	}
 
 	Path fileToStore = Paths.get(args[0]);
-	if(!fileToStore.toFile().exists()){
+	if(!Files.exists(fileToStore)){
 	    console.printf("Unfortunately the file you want to store does not exist.");
 	    System.exit(1);
 	}
 
-	if(!fileToStore.toFile().isFile()){
+	if(!Files.isRegularFile(fileToStore)){
 	    console.printf("Unfortunately the file you want to store is in fact, not a file.");
 	    System.exit(1);
 	}
 
-	if(!fileToStore.toFile().isFile()){
-	    console.printf("Unfortunately the file you want to store is in fact, not a file.");
-	    System.exit(1);
-	}
-
-	if(!Paths.get(args[1]).toFile().isDirectory()){
+	
+	if(!Files.isDirectory(Paths.get(args[1]))){
 	    console.printf("Storage path doesn't exist or is not a directory.");
 	    System.exit(1);
 	}
