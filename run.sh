@@ -19,4 +19,4 @@ java -cp $LIBS:.:target inozytol.cryptFetcher.App
 
 java -cp $LIBS:.:target inozytol.cryptFetcher.App lol ./
 
-java -cp $LIBS:.:target inozytol.cryptFetcher.App README.md ./
+java -cp $LIBS:.:target inozytol.cryptFetcher.App README.md ./target

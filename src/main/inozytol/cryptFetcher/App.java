@@ -95,6 +95,24 @@ public class App{
 	    // TODO: LOG
 	    console.printf("Exception occured during encryption " + e);
 	}
+
+	// file store function removes the original file ...
+	String storedFileId = diskFileFetcher.storeFile(tempOutputFile);
+	console.printf("Stored file " + storedFileId);
+
+	try {
+	    Files.delete(tempOutputFile);
+	} catch (IOException e) {
+	    console.printf("There has been an error: " + e);
+	}
+
+	for(String s : diskFileFetcher.fileList()){
+	    console.printf("File in storage: " + s + "\n");
+	}
+
+	diskFileFetcher.getFile(storedFileId);
+
+	
 	
 	// create output path, write to it from Cryptest,
 	// give this path to fileFetcher to store
