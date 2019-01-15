@@ -119,35 +119,22 @@ public class App{
 	    mprinter.printMessage("File in storage: " + s + "\n");
 	}
 
-	diskFileFetcher.getFile(storedFileId);
+	System.out.println("Stored file " + tempOutputFile +
+			   " deleted from local: " +
+			   !(Files.exists(tempOutputFile)));
 
-	
-	
-	// create output path, write to it from Cryptest,
-	// give this path to fileFetcher to store
-	// remove temporary file
+	System.out.println("Retreving file");
+	Path retrievedFile = diskFileFetcher.getFile(storedFileId);
+	System.out.println("Retrieved file " + retrievedFile +
+			   " exists: " + Files.exists(retrievedFile));
 
-	// get file names from runtime arguments
-	// arg1 - input file
-	// arg2 - output folder
-
-	// output file inputFileName.cryptfetcher
-
-	// input file must exist
-	// output folder must exist
-
-	//
-	/*
-	try () {
-	    Cryptest.encryptDataStreamToStream(passwordArray,
-					       5000,
-					       fileToEncryptStream,
-					       outputFileStream);
-	} catch (Exception e) {
-	    // TODO: LOG
-	    System.err.println("Error occured in App during encryption" + e);
+	System.out.println("Cleaning up local files");
+	try {
+	    Files.delete(tempOutputFile);
+	} catch (IOException e) {
+	    mprinter.printMessage("There has been an error: " + e);
 	}
-	*/				       
+
     }
 }
 
