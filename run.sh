@@ -24,14 +24,17 @@ fi
 java -cp $LIBS:.:target inozytol.cryptFetcher.App > error1
 echo "Well, you should give two arguments to this app: one - file to store; second - storage path" > error1good
 diff error1 error1good
-#rm error1
-#rm error1good
+
 if [[ $? -ne 0 ]]
 then
     echo "ERROR Something wrong with running script without arguments"
+    exit 1
 else
     echo "OK Good info when running script without arguments"
 fi
+
+rm error1
+rm error1good
 
 printf "\n"
 
