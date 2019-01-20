@@ -45,6 +45,11 @@ public class App{
     private static char[] askForPassword(String prompt) {
 	return pprompt.apply(prompt);
     }
+
+    private static void closeApp(int exitCode) {
+	if(inScanner!=null) inScanner.close();
+	System.exit(exitCode);
+    }
     
     public static void main(String [] args){
 
@@ -61,26 +66,28 @@ public class App{
 	    mprinter = (s) -> System.out.println(s);
 	    pprompt = (S) -> {return inScanner.nextLine().toCharArray();};
 	}
+
+	
 	if(args.length!=2) {
    	    printMessage("Well, you should give two arguments to this app: one - file to store; second - storage path");
-	    System.exit(1);
+	    closeApp(1);
 	}
 
 	Path fileToStore = Paths.get(args[0]);
 	if(!Files.exists(fileToStore)){
 	    printMessage("Unfortunately the file you want to store does not exist.");
-	    System.exit(1);
+	    closeApp(1);
 	}
 
 	if(!Files.isRegularFile(fileToStore)){
 	    printMessage("Unfortunately the file you want to store is in fact, not a file.");
-	    System.exit(1);
+	    closeApp(1);
 	}
 
 	
 	if(!Files.isDirectory(Paths.get(args[1]))){
 	    printMessage("Storage path doesn't exist or is not a directory.");
-	    System.exit(1);
+	    closeApp(1);
 	}
 
 
