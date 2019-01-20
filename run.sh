@@ -39,7 +39,7 @@ rm error1good
 printf "\n"
 
 java -cp $LIBS:.:target inozytol.cryptFetcher.App lol ./ > error2
-
+cat error2
 printf "\n"
 
-printf "lol\nlol" | java -cp $LIBS:.:target inozytol.cryptFetcher.App README.md ./target
+printf "lol\nlol\n" | java -cp $LIBS:.:target inozytol.cryptFetcher.App README.md ./target

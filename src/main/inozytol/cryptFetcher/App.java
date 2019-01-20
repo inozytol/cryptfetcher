@@ -15,6 +15,10 @@ import java.io.Console;
 import java.util.Arrays;
 import java.util.Scanner;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
@@ -30,11 +34,21 @@ import java.io.FileNotFoundException;
 
 public class App{
 
-    static MessagePrinter mprinter;
-    static PasswordPrompt pprompt;
-    static Scanner inScanner;
+    static Consumer<String> mprinter;
+    static Function<String,char []> pprompt;
+    static Scanner inScanner; // needed for reading input from standard input
 
+    private static void printMessage(String message) {
+	mprinter.accept(message);
+    }
+
+    private static char[] askForPassword(String prompt) {
+	return pprompt.apply(prompt);
+    }
+    
     public static void main(String [] args){
+
+
 	
 	Console console = System.console();
         if (console != null) {
@@ -48,24 +62,24 @@ public class App{
 	    pprompt = (S) -> {return inScanner.nextLine().toCharArray();};
 	}
 	if(args.length!=2) {
-	    mprinter.printMessage("Well, you should give two arguments to this app: one - file to store; second - storage path");
+   	    printMessage("Well, you should give two arguments to this app: one - file to store; second - storage path");
 	    System.exit(1);
 	}
 
 	Path fileToStore = Paths.get(args[0]);
 	if(!Files.exists(fileToStore)){
-	    mprinter.printMessage("Unfortunately the file you want to store does not exist.");
+	    printMessage("Unfortunately the file you want to store does not exist.");
 	    System.exit(1);
 	}
 
 	if(!Files.isRegularFile(fileToStore)){
-	    mprinter.printMessage("Unfortunately the file you want to store is in fact, not a file.");
+	    printMessage("Unfortunately the file you want to store is in fact, not a file.");
 	    System.exit(1);
 	}
 
 	
 	if(!Files.isDirectory(Paths.get(args[1]))){
-	    mprinter.printMessage("Storage path doesn't exist or is not a directory.");
+	    printMessage("Storage path doesn't exist or is not a directory.");
 	    System.exit(1);
 	}
 
@@ -73,19 +87,21 @@ public class App{
 	FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
 
 	
-        mprinter.printMessage("Testing password input %n");
+        printMessage("Testing password input %n");
 	
-        char passwordArray[] = pprompt.readPassword("Enter your secret password: ");
-        char passwordArrayConfirm[] = pprompt.readPassword("Enter your secret password again: ");
+        char passwordArray[] = askForPassword("Enter your secret password: ");
+	printMessage("First password: " + new String(passwordArray));
+	printMessage((new Scanner(System.in)).delimiter().pattern());
+        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
 
 	if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
-	    mprinter.printMessage("Password doesn't match!");
+	    printMessage("Password doesn't match!");
 	    //TODO : LOG INFO
 	    System.exit(1);
 	}
 	    
 
-	mprinter.printMessage("Using password to encrypt file: target/foo");
+	printMessage("Using password to encrypt file: target/foo");
 
 	Path tempOutputFile = Paths.get(fileToStore.getParent()==null?".":fileToStore.getParent().toString(), fileToStore.getFileName().toString() + ".inocrypt");
 	
@@ -99,24 +115,24 @@ public class App{
                                      bos);
 	} catch (FileNotFoundException e) {
 	    // TODO: LOG
-	    mprinter.printMessage("For some reason some file was not found during encryption " + e);
+	    printMessage("For some reason some file was not found during encryption " + e);
 	} catch (IOException e) {
 	    // TODO: LOG
-	    mprinter.printMessage("Exception occured during encryption " + e);
+	    printMessage("Exception occured during encryption " + e);
 	}
 
 	// file store function removes the original file ...
 	String storedFileId = diskFileFetcher.storeFile(tempOutputFile);
-	mprinter.printMessage("Stored file " + storedFileId);
+	printMessage("Stored file " + storedFileId);
 
 	try {
 	    Files.delete(tempOutputFile);
 	} catch (IOException e) {
-	    mprinter.printMessage("There has been an error: " + e);
+	    printMessage("There has been an error: " + e);
 	}
 
 	for(String s : diskFileFetcher.fileList()){
-	    mprinter.printMessage("File in storage: " + s + "\n");
+	    printMessage("File in storage: " + s + "\n");
 	}
 
 	System.out.println("Stored file " + tempOutputFile +
@@ -132,17 +148,8 @@ public class App{
 	try {
 	    Files.delete(tempOutputFile);
 	} catch (IOException e) {
-	    mprinter.printMessage("There has been an error: " + e);
+	    printMessage("There has been an error: " + e);
 	}
 
     }
-}
-
-
-interface MessagePrinter{
-    void printMessage(String message);
-}
-
-interface PasswordPrompt{
-    char [] readPassword(String passwordPrompt);
 }
