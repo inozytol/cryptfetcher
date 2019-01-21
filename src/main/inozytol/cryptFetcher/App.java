@@ -36,6 +36,7 @@ public class App{
 
     static Consumer<String> mprinter;
     static Function<String,char []> pprompt;
+    static Supplier<String> inputPrompt;
     static Scanner inScanner; // needed for reading input from standard input
 
     private static void printMessage(String message) {
@@ -46,6 +47,10 @@ public class App{
 	return pprompt.apply(prompt);
     }
 
+    private static String askForInput() {
+	return inputPrompt.get();
+    }
+
     private static void closeApp(int exitCode) {
 	if(inScanner!=null) inScanner.close();
 	System.exit(exitCode);
@@ -54,24 +59,44 @@ public class App{
     public static void main(String [] args){
 
 
-	
+	//If console can't be obtained use alternative (System.in and System.out)
 	Console console = System.console();
         if (console != null) {
 	    mprinter = (s) -> console.printf(s);
 	    pprompt = (s) -> {return console.readPassword(s);};
+	    inputPrompt = () -> {return console.readLine();};
 
         } else {
 	    // TODO: LOG
 	    inScanner = new Scanner(System.in);
 	    mprinter = (s) -> System.out.println(s);
 	    pprompt = (S) -> {return inScanner.nextLine().toCharArray();};
+	    inputPrompt = () -> {return inScanner.nextLine();};
 	}
 
-	
-	if(args.length!=2) {
-   	    printMessage("Well, you should give two arguments to this app: one - file to store; second - storage path");
-	    closeApp(1);
+	// If no arguments given - run in interactive mode
+	// First select file store (enter path or something)
+	// Then: you can retrieve file, store file, list stored files and delete stored file or exit
+	//
+
+	if(args.length==0) {
+	    String message = "No argument given. Running in interactive mode.";
+	    printMessage(message);
+	    do {
+		message = "Select store: File store - f (f)";
+		printMessage(message);
+		message = askForInput();
+	    } while(!message.equals("f") && !message.equals(""));
+	    do {
+		message = "Enter file store path: ";
+		printMessage(message);
+		message = askForInput();
+		if(!Files.isDirectory(Paths.get(message))) {
+		    printMessage("Path doesn't exist or is not a directory. ");
+		} 
+	    } while(!Files.isDirectory(Paths.get(message)));
 	}
+	
 
 	Path fileToStore = Paths.get(args[0]);
 	if(!Files.exists(fileToStore)){
@@ -92,23 +117,18 @@ public class App{
 
 
 	FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
-
-	
-        printMessage("Testing password input %n");
 	
         char passwordArray[] = askForPassword("Enter your secret password: ");
-	printMessage("First password: " + new String(passwordArray));
-	printMessage((new Scanner(System.in)).delimiter().pattern());
         char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
 
 	if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
 	    printMessage("Password doesn't match!");
 	    //TODO : LOG INFO
-	    System.exit(1);
+	    closeApp(1);
 	}
-	    
 
-	printMessage("Using password to encrypt file: target/foo");
+	
+	printMessage("Using password to encrypt file: " + fileToStore);
 
 	Path tempOutputFile = Paths.get(fileToStore.getParent()==null?".":fileToStore.getParent().toString(), fileToStore.getFileName().toString() + ".inocrypt");
 	
@@ -120,6 +140,7 @@ public class App{
                                      5000,
                                      bis,
                                      bos);
+
 	} catch (FileNotFoundException e) {
 	    // TODO: LOG
 	    printMessage("For some reason some file was not found during encryption " + e);
