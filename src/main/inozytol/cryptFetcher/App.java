@@ -34,10 +34,11 @@ import java.io.FileNotFoundException;
 
 public class App{
 
-    static Consumer<String> mprinter;
-    static Function<String,char []> pprompt;
-    static Supplier<String> inputPrompt;
-    static Scanner inScanner; // needed for reading input from standard input
+    private static Consumer<String> mprinter;
+    private static Function<String,char []> pprompt;
+    private static Supplier<String> inputPrompt;
+    private static Scanner inScanner; // needed for reading input from standard input
+    private static State appState = State.INIT;
 
     private static void printMessage(String message) {
 	mprinter.accept(message);
@@ -83,7 +84,7 @@ public class App{
 	    String message = "No argument given. Running in interactive mode.";
 	    printMessage(message);
 	    do {
-		message = "Select store: File store - f (f)";
+		message = "Select store: (f)ile store: (f) ";
 		printMessage(message);
 		message = askForInput();
 	    } while(!message.equals("f") && !message.equals(""));
@@ -95,6 +96,28 @@ public class App{
 		    printMessage("Path doesn't exist or is not a directory. ");
 		} 
 	    } while(!Files.isDirectory(Paths.get(message)));
+
+	    // TODO  make enum current action
+
+	    while(appState == State.INIT) {
+		message = "You can (r)etrieve file, (s)tore file, (l)ist stored files and (d)elete stored file or (e)xit: (l) ";
+		printMessage(message);
+		message = askForInput();
+		switch(message) {
+		    //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
+		case "r": appState = State.RETREIVE; break;
+		case "s": appState = State.STORE; break;
+		case "" :
+		case "l": appState = State.LIST; break;
+		case "d": appState = State.DELETE; break;
+		case "e": closeApp(0); break;
+		default: break;
+		}
+	    }
+	    printMessage("operation not supported yet\n");
+	    closeApp(0);
+
+	    
 	}
 	
 
@@ -180,4 +203,8 @@ public class App{
 	}
 
     }
+}
+
+enum State {
+    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
 }
