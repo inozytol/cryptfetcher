@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 
 public class App{
 
+    private static String storageDirectory;
     private static Consumer<String> mprinter;
     private static Function<String,char []> pprompt;
     private static Supplier<String> inputPrompt;
@@ -41,20 +42,20 @@ public class App{
     private static State appState = State.INIT;
 
     private static void printMessage(String message) {
-	mprinter.accept(message);
+        mprinter.accept(message);
     }
 
     private static char[] askForPassword(String prompt) {
-	return pprompt.apply(prompt);
+        return pprompt.apply(prompt);
     }
 
     private static String askForInput() {
-	return inputPrompt.get();
+        return inputPrompt.get();
     }
 
     private static void closeApp(int exitCode) {
-	if(inScanner!=null) inScanner.close();
-	System.exit(exitCode);
+        if(inScanner!=null) inScanner.close();
+        System.exit(exitCode);
     }
     
     public static void main(String [] args){
@@ -89,32 +90,43 @@ public class App{
 		message = askForInput();
 	    } while(!message.equals("f") && !message.equals(""));
 	    do {
-		message = "Enter file store path: ";
-		printMessage(message);
-		message = askForInput();
-		if(!Files.isDirectory(Paths.get(message))) {
-		    printMessage("Path doesn't exist or is not a directory. ");
-		} 
+			message = "Enter file store path: ";
+			printMessage(message);
+			message = askForInput();
+			if(!Files.isDirectory(Paths.get(message))) {
+			    printMessage("Path doesn't exist or is not a directory. ");
+			} 
 	    } while(!Files.isDirectory(Paths.get(message)));
-
+	    storageDirectory  = message;
 	    // TODO  make enum current action
 
 	    while(appState == State.INIT) {
 		message = "You can (r)etrieve file, (s)tore file, (l)ist stored files and (d)elete stored file or (e)xit: (l) ";
 		printMessage(message);
 		message = askForInput();
-		switch(message) {
-		    //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
-		case "r": appState = State.RETREIVE; break;
-		case "s": appState = State.STORE; break;
-		case "" :
-		case "l": appState = State.LIST; break;
-		case "d": appState = State.DELETE; break;
-		case "e": closeApp(0); break;
-		default: break;
-		}
+			switch(message) {
+			    //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
+			case "r": appState = State.RETREIVE; break;
+			case "s": appState = State.STORE; break;
+			case "" :
+			case "l": appState = State.LIST; break;
+			case "d": appState = State.DELETE; break;
+			case "e": closeApp(0); break;
+			default: break;
+			}
 	    }
-	    printMessage("operation not supported yet\n");
+	    
+	    if(appState == State.LIST) {
+	    	// list files in storage
+	        FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory));
+	        String [] files = diskFileFetcher.fileList();
+	        for (String file : files) {
+	            System.out.println(file);
+	        }
+	    	// go to selection
+	    } else {
+	        printMessage("operation not supported yet\n");
+	    }
 	    closeApp(0);
 
 	    
@@ -139,7 +151,7 @@ public class App{
 	}
 
 
-	FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
+;
 	
         char passwordArray[] = askForPassword("Enter your secret password: ");
         char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
@@ -150,6 +162,7 @@ public class App{
 	    closeApp(1);
 	}
 
+	   FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
 	
 	printMessage("Using password to encrypt file: " + fileToStore);
 
@@ -159,10 +172,7 @@ public class App{
 	     OutputStream bos = new BufferedOutputStream(new FileOutputStream(tempOutputFile.toFile()))) {
 	
 	StreamCrypt sc = new Cryptest();
-	sc.encryptDataStreamToStream​(passwordArray,
-                                     5000,
-                                     bis,
-                                     bos);
+	sc.encryptDataStreamToStream(passwordArray, 5000, bis, bos);
 
 	} catch (FileNotFoundException e) {
 	    // TODO: LOG
