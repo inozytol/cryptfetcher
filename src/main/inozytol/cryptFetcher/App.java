@@ -39,7 +39,7 @@ public class App{
     private static Function<String,char []> pprompt;
     private static Supplier<String> inputPrompt;
     private static Scanner inScanner; // needed for reading input from standard input
-    private static State appState = State.INIT;
+
 
     private static void printMessage(String message) {
         mprinter.accept(message);
@@ -59,7 +59,7 @@ public class App{
     }
     
     public static void main(String [] args){
-
+        State appState = State.INIT;
 
 	//If console can't be obtained use alternative (System.in and System.out)
 	Console console = System.console();
@@ -99,37 +99,10 @@ public class App{
 	    } while(!Files.isDirectory(Paths.get(message)));
 	    storageDirectory  = message;
 	    // TODO  make enum current action
-
-	    while(appState == State.INIT) {
-		message = "You can (r)etrieve file, (s)tore file, (l)ist stored files and (d)elete stored file or (e)xit: (l) ";
-		printMessage(message);
-		message = askForInput();
-			switch(message) {
-			    //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
-			case "r": appState = State.RETREIVE; break;
-			case "s": appState = State.STORE; break;
-			case "" :
-			case "l": appState = State.LIST; break;
-			case "d": appState = State.DELETE; break;
-			case "e": closeApp(0); break;
-			default: break;
-			}
+	    while (true) {
+    	    appState = selectStateInteractionLoop(); 
+    	    handleAppState(appState);
 	    }
-	    
-	    if(appState == State.LIST) {
-	    	// list files in storage
-	        FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory));
-	        String [] files = diskFileFetcher.fileList();
-	        for (String file : files) {
-	            System.out.println(file);
-	        }
-	    	// go to selection
-	    } else {
-	        printMessage("operation not supported yet\n");
-	    }
-	    closeApp(0);
-
-	    
 	}
 	
 
@@ -150,11 +123,8 @@ public class App{
 	    closeApp(1);
 	}
 
-
-;
-	
-        char passwordArray[] = askForPassword("Enter your secret password: ");
-        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
+    char passwordArray[] = askForPassword("Enter your secret password: ");
+    char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
 
 	if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
 	    printMessage("Password doesn't match!");
@@ -212,6 +182,49 @@ public class App{
 	    printMessage("There has been an error: " + e);
 	}
 
+    }
+
+    private static void handleAppState(State appState) {
+        if(appState == State.LIST) {
+            listFiles(storageDirectory);
+        } else if(appState == State.EXIT) {
+            closeApp(0);
+        }
+        else {
+            printMessage("operation not supported yet\n");
+            closeApp(0);
+        }
+    }
+
+    private static void listFiles(String storageDirectory2) {
+        // TODO: decide whether to pass storage directory as argument or use static class variable
+        FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory2));
+        String [] files = diskFileFetcher.fileList();
+        for (String file : files) {
+            System.out.println(file);
+        }
+    }
+
+    private static State selectStateInteractionLoop() {
+        String message;
+        State ret = State.INIT;
+        while(ret == State.INIT) {
+        message = "You can (r)etrieve file, (s)tore file, (l)ist stored files and (d)elete stored file or (e)xit: (l) ";
+        printMessage(message);
+        message = askForInput();
+            switch(message) {
+                //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
+            case "r": ret = State.RETREIVE; break;
+            case "s": ret = State.STORE; break;
+            case "" :
+            case "l": ret = State.LIST; break;
+            case "d": ret = State.DELETE; break;
+            case "e": ret = State.EXIT; break;
+            default: break;
+            }
+        }
+        return ret;
+        
     }
 }
 
