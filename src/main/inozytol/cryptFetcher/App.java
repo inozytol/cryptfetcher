@@ -39,6 +39,7 @@ public class App{
     private static Function<String,char []> pprompt;
     private static Supplier<String> inputPrompt;
     private static Scanner inScanner; // needed for reading input from standard input
+    private static FileFetcherDispatcherById fileFetcher;
 
 
     private static void printMessage(String message) {
@@ -50,6 +51,11 @@ public class App{
     }
 
     private static String askForInput() {
+        return inputPrompt.get();
+    }
+    
+    private static String askForInput(String prompt) {
+        printMessage(prompt);
         return inputPrompt.get();
     }
 
@@ -72,7 +78,10 @@ public class App{
 	    // TODO: LOG
 	    inScanner = new Scanner(System.in);
 	    mprinter = (s) -> System.out.println(s);
-	    pprompt = (S) -> {return inScanner.nextLine().toCharArray();};
+	    pprompt = (s) -> {
+	        mprinter.accept(s);
+	        return inScanner.nextLine().toCharArray();
+	    };
 	    inputPrompt = () -> {return inScanner.nextLine();};
 	}
 
@@ -89,8 +98,13 @@ public class App{
 		printMessage(message);
 		message = askForInput();
 	    } while(!message.equals("f") && !message.equals(""));
+	    
+	    // in future versions this shouldn't be hard wired
+	    // this is case for diskFileFetcher, but some way to service another file fetchers 
+	    // depending on chosen option should be devised
 	    do {
 			message = "Enter file store path: ";
+			
 			printMessage(message);
 			message = askForInput();
 			if(!Files.isDirectory(Paths.get(message))) {
@@ -98,7 +112,10 @@ public class App{
 			} 
 	    } while(!Files.isDirectory(Paths.get(message)));
 	    storageDirectory  = message;
-	    // TODO  make enum current action
+	    fileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory));
+	    // end of disk file fetcher specific code
+	    
+	    
 	    while (true) {
     	    appState = selectStateInteractionLoop(); 
     	    handleAppState(appState);
@@ -170,11 +187,6 @@ public class App{
 			   " deleted from local: " +
 			   !(Files.exists(tempOutputFile)));
 
-	System.out.println("Retreving file");
-	Path retrievedFile = diskFileFetcher.getFile(storedFileId);
-	System.out.println("Retrieved file " + retrievedFile +
-			   " exists: " + Files.exists(retrievedFile));
-
 	System.out.println("Cleaning up local files");
 	try {
 	    Files.delete(tempOutputFile);
@@ -187,13 +199,95 @@ public class App{
     private static void handleAppState(State appState) {
         if(appState == State.LIST) {
             listFiles(storageDirectory);
-        } else if(appState == State.EXIT) {
+        } else if(appState == State.RETREIVE) {
+            String fileToRetrieveId = askForInput("Enter id of the file to retrieve: ");
+            retrieveFile(fileToRetrieveId);
+        } else if(appState == State.STORE) {
+            String fileToStoreId = askForInput("Enter a name of file to store: ");
+            Path fileToStorePath = Paths.get(fileToStoreId);
+            storeFile(fileToStorePath);
+        }
+        else if(appState == State.EXIT) {
             closeApp(0);
         }
         else {
             printMessage("operation not supported yet\n");
             closeApp(0);
         }
+    }
+    
+    private static void storeFile(Path fileToStore) {
+        char passwordArray[] = askForPassword("Enter your secret password: ");
+        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
+
+        if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
+            printMessage("Password doesn't match!");
+            //TODO : LOG INFO
+            closeApp(1);
+        }
+        
+        printMessage("Storing file"); 
+        printMessage("Creating temporary encrypted file");
+        Path encryptedFile = Paths.get(storageDirectory, fileToStore.getFileName().toString(),".inocrypt");
+        
+        try (InputStream bis = new BufferedInputStream(new FileInputStream(fileToStore.toFile()));
+             OutputStream bos = new BufferedOutputStream(new FileOutputStream(encryptedFile.toFile()))) {
+        
+            StreamCrypt sc = new Cryptest();
+            sc.encryptDataStreamToStream(passwordArray, 5000, bis, bos);
+        
+            String storedFileId = fileFetcher.storeFile(encryptedFile);
+            bis.close();
+            bos.close();
+            printMessage("Id returned from file fetcher " + storedFileId);
+            
+            /*printMessage("Deleting temporary encrypted file");
+            if(Files.exists(encryptedFile)){
+                Files.delete(encryptedFile);
+            }*/
+
+        } catch (FileNotFoundException e) {
+            // TODO: LOG
+            printMessage("For some reason some file was not found during decryption " + e);
+        } catch (IOException e) {
+            // TODO: LOG
+            printMessage("Exception occured during decryption " + e);
+        } 
+       
+    }
+
+    private static void retrieveFile(String fileToRetrieveId) {
+        char passwordArray[] = askForPassword("Enter your secret password: ");
+        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
+
+        if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
+            printMessage("Password doesn't match!");
+            //TODO : LOG INFO
+            closeApp(1);
+        }
+        
+        System.out.println("Retreving file");
+        Path retrievedFile = fileFetcher.getFile(fileToRetrieveId);
+        
+        Path outputFile = Paths.get(retrievedFile.getParent()==null?".":retrievedFile.getParent().toString(),retrievedFile.getFileName().toString() + ".inocrypt");
+        
+        try (InputStream bis = new BufferedInputStream(new FileInputStream(retrievedFile.toFile()));
+             OutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile.toFile()))) {
+        
+        StreamCrypt sc = new Cryptest();
+        sc.decryptDataStreamToStream(passwordArray, bis, bos);
+
+        } catch (FileNotFoundException e) {
+            // TODO: LOG
+            printMessage("For some reason some file was not found during decryption " + e);
+        } catch (IOException e) {
+            // TODO: LOG
+            printMessage("Exception occured during decryption " + e);
+        }
+        
+        System.out.println("Retrieved file " + retrievedFile +
+                   " exists: " + Files.exists(retrievedFile));
+        
     }
 
     private static void listFiles(String storageDirectory2) {
