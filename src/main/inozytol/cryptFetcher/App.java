@@ -67,8 +67,8 @@ public class App{
     public static void main(String [] args){
         State appState = State.INIT;
 
-	//If console can't be obtained use alternative (System.in and System.out)
-	Console console = System.console();
+        //If console can't be obtained use alternative (System.in and System.out)
+        Console console = System.console();
         if (console != null) {
 	    mprinter = (s) -> console.printf(s);
 	    pprompt = (s) -> {return console.readPassword(s);};
@@ -266,16 +266,32 @@ public class App{
             closeApp(1);
         }
         
-        System.out.println("Retreving file");
-        Path retrievedFile = fileFetcher.getFile(fileToRetrieveId);
         
-        Path outputFile = Paths.get(retrievedFile.getParent()==null?".":retrievedFile.getParent().toString(),retrievedFile.getFileName().toString() + ".inocrypt");
+        
+        printMessage("Retreving file");
+        
+        // Creating temporary encrypted file as a compatibility layer
+        // for file fetchers that would not allow to create streams 
+        // directly from them
+        Path encryptedFile = null;
+        try {
+            encryptedFile = Files.createTempFile("","");
+        } catch (IOException e) {
+            //TODO log
+            printMessage("Failed to create temporary file for file retrieval");
+            closeApp(1);
+        }
+        
+        Path retrievedFile = fileFetcher.getFile(fileToRetrieveId, encryptedFile);
+        // TODO fileFetcher should be modified to allow writing to given path
+        
+        Path outputFile = Paths.get(fileToRetrieveId);
         
         try (InputStream bis = new BufferedInputStream(new FileInputStream(retrievedFile.toFile()));
              OutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile.toFile()))) {
-        
-        StreamCrypt sc = new Cryptest();
-        sc.decryptDataStreamToStream(passwordArray, bis, bos);
+            
+            StreamCrypt sc = new Cryptest();
+            sc.decryptDataStreamToStream(passwordArray, bis, bos);
 
         } catch (FileNotFoundException e) {
             // TODO: LOG
