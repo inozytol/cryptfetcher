@@ -217,18 +217,11 @@ public class App{
     }
     
     private static void storeFile(Path fileToStore) {
-        char passwordArray[] = askForPassword("Enter your secret password: ");
-        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
-
-        if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
-            printMessage("Password doesn't match!");
-            //TODO : LOG INFO
-            closeApp(1);
-        }
+        char [] passwordArray = loopAskForPasswordAndCompare();
         
         printMessage("Storing file"); 
         printMessage("Creating temporary encrypted file");
-        Path encryptedFile = Paths.get(storageDirectory, fileToStore.getFileName().toString(),".inocrypt");
+        Path encryptedFile = Paths.get(storageDirectory, fileToStore.getFileName().toString());
         
         try (InputStream bis = new BufferedInputStream(new FileInputStream(fileToStore.toFile()));
              OutputStream bos = new BufferedOutputStream(new FileOutputStream(encryptedFile.toFile()))) {
@@ -257,16 +250,7 @@ public class App{
     }
 
     private static void retrieveFile(String fileToRetrieveId) {
-        char passwordArray[] = askForPassword("Enter your secret password: ");
-        char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
-
-        if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
-            printMessage("Password doesn't match!");
-            //TODO : LOG INFO
-            closeApp(1);
-        }
-        
-        
+        char passwordArray[] = loopAskForPasswordAndCompare();
         
         printMessage("Retreving file");
         
@@ -313,6 +297,28 @@ public class App{
         for (String file : files) {
             System.out.println(file);
         }
+    }
+    
+    private static char[] loopAskForPasswordAndCompare() {
+        int attempts = 3;
+        char passwordArray[] = null;
+        char passwordArrayConfirm[] = null;
+        do {
+            passwordArray = askForPassword("Enter your secret password: ");
+            passwordArrayConfirm = askForPassword("Enter your secret password again: ");
+
+            if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
+                printMessage("Passwords don't match! Attempts left: " + --attempts);
+                if(attempts == 0) {
+                    printMessage("Program terminated.");
+                    //TODO : LOG INFO
+                    closeApp(1);
+                }
+            }
+        } while ( (!Arrays.equals(passwordArray, passwordArrayConfirm)) );
+        
+        Arrays.fill(passwordArrayConfirm, 'x');
+        return passwordArray;
     }
 
     private static State selectStateInteractionLoop() {
