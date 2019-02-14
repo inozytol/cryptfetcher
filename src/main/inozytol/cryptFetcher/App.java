@@ -94,20 +94,24 @@ public class App{
 	    String message = "No argument given. Running in interactive mode.";
 	    printMessage(message);
 	    do {
-		message = "Select store: (f)ile store: (f) ";
-		printMessage(message);
-		message = askForInput();
+    		message = "Select store: (f)ile store, (e)xit: (f) ";
+    		printMessage(message);
+    		message = askForInput();
+    		if(message.equalsIgnoreCase("e")) {
+    		    closeApp(0);
+    		}
 	    } while(!message.equals("f") && !message.equals(""));
 	    
 	    // in future versions this shouldn't be hard wired
 	    // this is case for diskFileFetcher, but some way to service another file fetchers 
 	    // depending on chosen option should be devised
 	    do {
-			message = "Enter file store path: ";
+			message = "Enter file store path: (./) ";
 			
 			printMessage(message);
 			message = askForInput();
-			if(!Files.isDirectory(Paths.get(message))) {
+			System.out.println(message);
+			if(message == null || !Files.exists(Paths.get(message)) || !Files.isDirectory(Paths.get(message))) {
 			    printMessage("Path doesn't exist or is not a directory. ");
 			} 
 	    } while(!Files.isDirectory(Paths.get(message)));
