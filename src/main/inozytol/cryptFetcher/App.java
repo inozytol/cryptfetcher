@@ -110,7 +110,7 @@ public class App{
 			
 			printMessage(message);
 			message = askForInput();
-			System.out.println(message);
+
 			if(message == null || !Files.exists(Paths.get(message)) || !Files.isDirectory(Paths.get(message))) {
 			    printMessage("Path doesn't exist or is not a directory. ");
 			} 
@@ -125,78 +125,7 @@ public class App{
     	    handleAppState(appState);
 	    }
 	}
-	
 
-	Path fileToStore = Paths.get(args[0]);
-	if(!Files.exists(fileToStore)){
-	    printMessage("Unfortunately the file you want to store does not exist.");
-	    closeApp(1);
-	}
-
-	if(!Files.isRegularFile(fileToStore)){
-	    printMessage("Unfortunately the file you want to store is in fact, not a file.");
-	    closeApp(1);
-	}
-
-	
-	if(!Files.isDirectory(Paths.get(args[1]))){
-	    printMessage("Storage path doesn't exist or is not a directory.");
-	    closeApp(1);
-	}
-
-    char passwordArray[] = askForPassword("Enter your secret password: ");
-    char passwordArrayConfirm[] = askForPassword("Enter your secret password again: ");
-
-	if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
-	    printMessage("Password doesn't match!");
-	    //TODO : LOG INFO
-	    closeApp(1);
-	}
-
-	   FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(args[1]));
-	
-	printMessage("Using password to encrypt file: " + fileToStore);
-
-	Path tempOutputFile = Paths.get(fileToStore.getParent()==null?".":fileToStore.getParent().toString(), fileToStore.getFileName().toString() + ".inocrypt");
-	
-	try (InputStream bis = new BufferedInputStream(new FileInputStream(fileToStore.toFile()));
-	     OutputStream bos = new BufferedOutputStream(new FileOutputStream(tempOutputFile.toFile()))) {
-	
-	StreamCrypt sc = new Cryptest();
-	sc.encryptDataStreamToStream(passwordArray, 5000, bis, bos);
-
-	} catch (FileNotFoundException e) {
-	    // TODO: LOG
-	    printMessage("For some reason some file was not found during encryption " + e);
-	} catch (IOException e) {
-	    // TODO: LOG
-	    printMessage("Exception occured during encryption " + e);
-	}
-
-	// file store function removes the original file ...
-	String storedFileId = diskFileFetcher.storeFile(tempOutputFile);
-	printMessage("Stored file " + storedFileId);
-
-	try {
-	    Files.delete(tempOutputFile);
-	} catch (IOException e) {
-	    printMessage("There has been an error: " + e);
-	}
-
-	for(String s : diskFileFetcher.fileList()){
-	    printMessage("File in storage: " + s + "\n");
-	}
-
-	System.out.println("Stored file " + tempOutputFile +
-			   " deleted from local: " +
-			   !(Files.exists(tempOutputFile)));
-
-	System.out.println("Cleaning up local files");
-	try {
-	    Files.delete(tempOutputFile);
-	} catch (IOException e) {
-	    printMessage("There has been an error: " + e);
-	}
 
     }
 
