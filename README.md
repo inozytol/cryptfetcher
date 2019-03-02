@@ -27,6 +27,11 @@ Cryptest and fileFetcher packages are homemade
 
 ## Done
 1. Proof of concept - fixed file encrypted and decrypted
+1. Interactive text interface for basic encryption decryption
 
+    
 ## Future work/TODO
-1. Implement interactive interface for encryption and decryption of file specified by the user
+### Codewise
+1. Move to Maven (figure out how to move functionality from run.sh script)
+1. Move interface from fileFetcher to this package
+1. Separate text interface from logic/app workflow - make UI pluggable, not part of logic/app workflow
