@@ -35,58 +35,21 @@ import java.io.FileNotFoundException;
 public class App{
 
     private static String storageDirectory;
-    private static Consumer<String> mprinter;
-    private static Function<String,char []> pprompt;
-    private static Supplier<String> inputPrompt;
-    private static Scanner inScanner; // needed for reading from standard input
+
     private static FileFetcherDispatcherById fileFetcher;
+    private static UI userInterface;
 
 
-    private static void printMessage(String message) {
-        mprinter.accept(message);
-    }
+    private static State appState = State.INIT;
 
-    private static char[] askForPassword(String prompt) {
-        return pprompt.apply(prompt);
-    }
-
-    private static String askForInput() {
-        return inputPrompt.get();
-    }
-
-    private static String askForInput(String prompt) {
-        printMessage(prompt);
-        return inputPrompt.get();
-    }
 
     private static void closeApp(int exitCode) {
-        if(inScanner!=null) inScanner.close();
+        userInterface.closeInterface();
         System.exit(exitCode);
     }
 
     public static void main(String [] args){
-        State appState = State.INIT;
-
-        //If console can't be obtained
-        //use alternative (System.in and System.out)
-
-        Console console = System.console();
-        if (console != null) {
-        mprinter = (s) -> console.printf(s);
-        pprompt = (s) -> {return console.readPassword(s);};
-        inputPrompt = () -> {return console.readLine();};
-
-        } else {
-        // TODO: LOG
-        inScanner = new Scanner(System.in);
-        mprinter = (s) -> System.out.println(s);
-        pprompt = (s) -> {
-            mprinter.accept(s);
-            return inScanner.nextLine().toCharArray();
-        };
-        inputPrompt = () -> {return inScanner.nextLine();};
-    }
-
+        userInterface = new ConsoleTextUI();
 
     // If no arguments given - run in interactive mode
     // First select file store (enter path or something)
@@ -95,11 +58,11 @@ public class App{
 
     if(args.length==0) {
         String message = "No argument given. Running in interactive mode.";
-        printMessage(message);
+        userInterface.conveyMessage(message);
         do {
             message = "Select store: (f)ile store, (e)xit: (f) ";
-            printMessage(message);
-            message = askForInput();
+            userInterface.conveyMessage(message);
+            message = userInterface.askForInput();
             if(message.equalsIgnoreCase("e")) {
                 closeApp(0);
             }
@@ -112,13 +75,13 @@ public class App{
         do {
             message = "Enter file store path: (./) ";
 
-            printMessage(message);
-            message = askForInput();
+            userInterface.conveyMessage(message);
+            message = userInterface.askForInput();
 
             if((message == null)
                || !Files.exists(Paths.get(message))
                || !Files.isDirectory(Paths.get(message))) {
-                printMessage("Path doesn't exist or is not a directory. ");
+                userInterface.conveyMessage("Path doesn't exist or is not a directory. ");
             }
         } while(!Files.isDirectory(Paths.get(message)));
         storageDirectory  = message;
@@ -138,14 +101,14 @@ public class App{
 
     private static void handleAppState(State appState) {
         if(appState == State.LIST) {
-            listFiles(storageDirectory);
+            userInterface.listFilesInStorage(storageDirectory);
         } else if(appState == State.RETREIVE) {
             String fileToRetrieveId =
-                askForInput("Enter id of the file to retrieve: ");
+                userInterface.askForInput("Enter id of the file to retrieve: ");
             retrieveFile(fileToRetrieveId);
         } else if(appState == State.STORE) {
             String fileToStoreId =
-                askForInput("Enter a name of file to store: ");
+                userInterface.askForInput("Enter a name of file to store: ");
             Path fileToStorePath = Paths.get(fileToStoreId);
             storeFile(fileToStorePath);
         }
@@ -153,7 +116,7 @@ public class App{
             closeApp(0);
         }
         else {
-            printMessage("operation not supported yet\n");
+            userInterface.conveyMessage("operation not supported yet\n");
             closeApp(0);
         }
     }
@@ -161,8 +124,8 @@ public class App{
     private static void storeFile(Path fileToStore) {
         char [] passwordArray = loopAskForPasswordAndCompare();
 
-        printMessage("Storing file");
-        printMessage("Creating temporary encrypted file");
+        userInterface.conveyMessage("Storing file");
+        userInterface.conveyMessage("Creating temporary encrypted file");
         Path encryptedFile =
             Paths.get(storageDirectory, fileToStore.getFileName().toString());
 
@@ -177,14 +140,14 @@ public class App{
             String storedFileId = fileFetcher.storeFile(encryptedFile);
             bis.close();
             bos.close();
-            printMessage("Id returned from file fetcher " + storedFileId);
+            userInterface.conveyMessage("Id returned from file fetcher " + storedFileId);
 
         } catch (FileNotFoundException e) {
             // TODO: LOG
-            printMessage("For some reason some file was not found during decryption " + e);
+            userInterface.conveyMessage("For some reason some file was not found during decryption " + e);
         } catch (IOException e) {
             // TODO: LOG
-            printMessage("Exception occured during decryption " + e);
+            userInterface.conveyMessage("Exception occured during decryption " + e);
         }
 
     }
@@ -192,7 +155,7 @@ public class App{
     private static void retrieveFile(String fileToRetrieveId) {
         char passwordArray[] = loopAskForPasswordAndCompare();
 
-        printMessage("Retreving file");
+        userInterface.conveyMessage("Retreving file");
 
         // Creating temporary encrypted file as a compatibility layer
         // for file fetchers that would not allow to create streams
@@ -202,7 +165,7 @@ public class App{
             encryptedFile = Files.createTempFile("","");
         } catch (IOException e) {
             //TODO log
-            printMessage("Failed to create temporary file for file retrieval");
+            userInterface.conveyMessage("Failed to create temporary file for file retrieval");
             closeApp(1);
         }
 
@@ -219,10 +182,10 @@ public class App{
 
         } catch (FileNotFoundException e) {
             // TODO: LOG
-            printMessage("For some reason some file was not found during decryption " + e);
+            userInterface.conveyMessage("For some reason some file was not found during decryption " + e);
         } catch (IOException e) {
             // TODO: LOG
-            printMessage("Exception occured during decryption " + e);
+            userInterface.conveyMessage("Exception occured during decryption " + e);
         }
         
         System.out.println("Retrieved file " + retrievedFile +
@@ -230,27 +193,19 @@ public class App{
         
     }
 
-    private static void listFiles(String storageDirectory2) {
-        // TODO: decide whether to pass storage directory as argument or use static class variable
-        FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory2));
-        String [] files = diskFileFetcher.fileList();
-        for (String file : files) {
-            System.out.println(file);
-        }
-    }
     
     private static char[] loopAskForPasswordAndCompare() {
         int attempts = 3;
         char passwordArray[] = null;
         char passwordArrayConfirm[] = null;
         do {
-            passwordArray = askForPassword("Enter your secret password: ");
-            passwordArrayConfirm = askForPassword("Enter your secret password again: ");
+            passwordArray = userInterface.askForPassword("Enter your secret password: ");
+            passwordArrayConfirm = userInterface.askForPassword("Enter your secret password again: ");
 
             if (!Arrays.equals(passwordArray, passwordArrayConfirm)) {
-                printMessage("Passwords don't match! Attempts left: " + --attempts);
+                userInterface.conveyMessage("Passwords don't match! Attempts left: " + --attempts);
                 if(attempts == 0) {
-                    printMessage("Program terminated.");
+                    userInterface.conveyMessage("Program terminated.");
                     //TODO : LOG INFO
                     closeApp(1);
                 }
@@ -266,8 +221,8 @@ public class App{
         State ret = State.INIT;
         while(ret == State.INIT) {
         message = "You can (r)etrieve file, (s)tore file, (l)ist stored files and (d)elete stored file or (e)xit: (l) ";
-        printMessage(message);
-        message = askForInput();
+        userInterface.conveyMessage(message);
+        message = userInterface.askForInput();
             switch(message) {
                 //    INIT, RETREIVE, STORE, DELETE, LIST, EXIT
             case "r": ret = State.RETREIVE; break;
@@ -286,4 +241,93 @@ public class App{
 
 enum State {
     INIT, RETREIVE, STORE, DELETE, LIST, EXIT
+}
+
+
+// TODO: Create interface UI to separate logic from reprezentation?
+/*
+Interface will have a state probably
+Interface will probably have to register main app as listener of events
+Events such as closing app. Maybe it should just close app?
+ */
+interface UI {
+    public void conveyMessage(String message);
+
+    public char[] askForPassword(String prompt);
+
+    public String askForInput();
+
+    public String askForInput(String prompt);
+
+    public void closeInterface();
+
+    public void listFilesInStorage(String storageDir);
+}
+
+class ConsoleTextUI implements UI {
+
+    private static Consumer<String> mprinter;
+    private static Function<String,char []> pprompt;
+    private static Supplier<String> inputPrompt;
+    private static Scanner inScanner; // needed for reading from standard input
+    
+    
+    
+    
+    public ConsoleTextUI() {
+
+
+        //If console can't be obtained
+        //use alternative (System.in and System.out)
+
+        Console console = System.console();
+        if (console != null) {
+            mprinter = (s) -> console.printf(s + "\n");
+            pprompt = (s) -> {return console.readPassword(s);};
+            inputPrompt = () -> {return console.readLine();};
+
+        } else {
+            // TODO: LOG
+            inScanner = new Scanner(System.in);
+            mprinter = (s) -> System.out.println(s);
+            pprompt = (s) -> {
+                mprinter.accept(s);
+                return inScanner.nextLine().toCharArray();
+            };
+            inputPrompt = () -> {return inScanner.nextLine();};
+        }
+    }
+
+    public void conveyMessage(String message) {
+        mprinter.accept(message);
+    }
+
+    public char[] askForPassword(String prompt) {
+        return pprompt.apply(prompt);
+    }
+
+    public String askForInput() {
+        return inputPrompt.get();
+    }
+
+    public String askForInput(String prompt) {
+        conveyMessage(prompt);
+        return inputPrompt.get();
+    }
+
+    public void closeInterface() {
+        if(inScanner!=null) inScanner.close();
+    }
+
+    public void listFilesInStorage(String storageDirectory2) {
+        // TODO: decide whether to pass storage directory as argument or use static class variable
+        FileFetcherDispatcherById diskFileFetcher = FetcherDispatcherFactory.getDispatcher(Paths.get(storageDirectory2));
+        String [] files = diskFileFetcher.fileList();
+        for (String file : files) {
+            conveyMessage(file);
+        }
+    }
+
+
+
 }
