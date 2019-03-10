@@ -188,7 +188,7 @@ public class App{
             userInterface.conveyMessage("Exception occured during decryption " + e);
         }
         
-        System.out.println("Retrieved file " + retrievedFile +
+        userInterface.conveyMessage("Retrieved file " + retrievedFile +
                    " exists: " + Files.exists(retrievedFile));
         
     }
@@ -238,6 +238,13 @@ public class App{
         
     }
 }
+
+
+Class AppLogic {
+    
+
+}
+
 
 enum State {
     INIT, RETREIVE, STORE, DELETE, LIST, EXIT
