@@ -240,7 +240,7 @@ public class App{
 }
 
 
-Class AppLogic {
+class AppLogic {
     
 
 }

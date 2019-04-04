@@ -3,3 +3,4 @@
 !.gitignore
 ! ./src/main/inozytol/cryptFetcher/*.java
 ! ./src/test/inozytol/cryptFetcher/*.java
+!pom.xml
